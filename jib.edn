@@ -1,0 +1,6 @@
+{:main atomist.web.handler
+ :target-image {:type :registry
+                :image-name "gcr.io/personalsdm-216019/gcr-clj-web"
+                :tagger {:fn jibbit.tagger/tag
+                         :args {:local "version.txt"} }
+                :authorizer {:fn jibbit.gcloud/authorizer}}}

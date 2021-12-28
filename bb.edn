@@ -1,0 +1,54 @@
+{:min-bb-version "0.3.7"
+ :paths ["scripts"]
+ :deps {slimslenderslacks/bb-util {:local/root "/Users/slim/slimslenderslacks/bb-util"}
+        lread/status-line {:git/url "https://github.com/lread/status-line.git"
+                           :sha "35ed39645038e81b42cb15ed6753b8462e60a06d"}}
+ :tasks {:requires [[clojure.string :as string]
+                    [lread.status-line :as status]
+                    [babashka.process :as p]
+                    [babashka.fs :as fs]
+                    [clojure.tools.cli :as cli]
+                    [clojure.pprint :refer [pprint]]
+                    [tasks :as slim-tasks]]
+         :init (do (def cli-opts (cli/parse-opts *command-line-args* [["-m" "--message MESSSAGE" ""]
+                                                                      [nil "--skip-clean-check" "run anyway"]
+                                                                      [nil "--context context" "kube context"]]))
+                   (def kube-config-context (-> cli-opts :options :context)))
+         :enter (let [{:keys [name]} (current-task)] (status/line :head "TASK %s %s" name (string/join " " *command-line-args*)))
+         :leave (let [{:keys [name]} (current-task)] (status/line :detail "\nTASK %s done." name))
+
+         version {:task (let [v (slim-tasks/describe)]
+                          (println v)
+                          v)}
+
+         increment-version {:task (do (slim-tasks/increment-version (fs/file "src/atomist/web/handler.clj")))}
+
+         commit {:depends [increment-version]
+                 :task (slim-tasks/recommit-any-updates (-> cli-opts :options :message))}
+
+         clean? {:task (if (and (not (-> cli-opts :options :skip-clean-check)) (not (slim-tasks/clean?)))
+                         (throw (ex-info "dirty working copy. stop" {})))}
+         ;; requires the jib tool to be installed
+         build-image {:depends [commit clean? version]
+                      :task (do
+                              (when (or
+                                     (seq (fs/modified-since "target/app.jar" (fs/glob "src" "**.clj")))
+                                     (seq (fs/modified-since "target/app.jar" (fs/glob "." "deps.edn")))
+                                     (seq (fs/modified-since "target/app.jar" (fs/glob "." "jib.edn"))))
+                                (println "version is " version)
+                                (clojure "-T:jib" "build" ":tag" version)))}
+         context (shell (format "kubectl config use-context %s" kube-config-context))
+         deploy {:depends [build-image context version]
+                 :task (do (-> (p/process "kustomize build resources/k8s/deployment")
+                               (p/process "envsubst" {:extra-env {"GIT_DESCRIBE" version}})
+                               (p/process "kubectl apply -f -" {:out :string :err :string})
+                               deref
+                               ((fn [{:keys [out err]}]
+                                  (println out)
+                                  (println err))))
+                           (println (format "deployed version gcr.io/personalsdm-216019/gcr-clj-web:%s" version)))}
+         undeploy {:task (-> (p/process "kustomize build resources/k8s/deployment")
+                             (p/process "envsubst" {:extra-env {"GIT_DESCRIBE" version}})
+                             (p/process "kubectl apply -f -" {:out :string :err :string})
+                             deref
+                             ((fn [{:keys [out err]}] (println out) (println err))))}}}
