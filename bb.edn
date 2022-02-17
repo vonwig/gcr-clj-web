@@ -7,6 +7,7 @@
                     [lread.status-line :as status]
                     [babashka.process :as p]
                     [babashka.fs :as fs]
+                    [clojure.string :as str]
                     [clojure.tools.cli :as cli]
                     [clojure.pprint :refer [pprint]]
                     [tasks :as slim-tasks]]
@@ -19,7 +20,7 @@
 
          version {:task (let [v (slim-tasks/describe)]
                           (println v)
-                          v)}
+                          (str/trim v))}
 
          increment-version {:task (do (slim-tasks/increment-version (fs/file "src/atomist/web/handler.clj")))}
 
