@@ -5,6 +5,7 @@
                            :sha "35ed39645038e81b42cb15ed6753b8462e60a06d"}}
  :tasks {:requires [[clojure.string :as string]
                     [lread.status-line :as status]
+                    [atomist.json.interface :as json]
                     [babashka.process :as p]
                     [babashka.fs :as fs]
                     [clojure.tools.cli :as cli]
@@ -51,24 +52,28 @@
                                 (clojure "-T:jib" "build" ":tag" version)))}
 
          kube-config-context {:task (if-let [c (-> cli-opts :options :context)]
-                                            c
-                                            (throw (ex-info "run with --context" {})))}
+                                      c
+                                      (throw (ex-info "run with --context" {})))}
          context {:depends [kube-config-context]
                   :task (shell (format "kubectl config use-context %s" kube-config-context))}
 
-         ;; gcloud needs to be pointing at the personalsdm project
-         deploy {:depends [context version]
-                 :task (do
-                         (-> (p/process "kustomize build resources/k8s/deployment")
-                             (p/process "envsubst" {:extra-env {"GIT_DESCRIBE" version}})
-                             (p/process "kubectl apply -f -" {:out :string :err :string})
-                             deref
-                             ((fn [{:keys [out err]}]
-                                (println out)
-                                (println err))))
-                         (println (format "deployed version slimslenderslacks/dockerhub-eks-clj-web:%s" version)))}
-         undeploy {:task (-> (p/process "kustomize build resources/k8s/deployment")
-                             (p/process "envsubst" {:extra-env {"GIT_DESCRIBE" version}})
-                             (p/process "kubectl apply -f -" {:out :string :err :string})
-                             deref
-                             ((fn [{:keys [out err]}] (println out) (println err))))}}}
+         ingress-ip "35.231.1.233"
+
+         pod-version {:depends [context ingress-ip]
+                      :task (shell (format "curl -H \"Host: demo.atomist.com\" http://%s/clj2" ingress-ip))}
+
+         first-pod-name {:task (->> (shell {:out :string} "kubectl get pods -n production -o json")
+                                    (deref)
+                                    :out
+                                    (json/->obj)
+                                    :items
+                                    (filter (fn [item] ( .startsWith (-> item :metadata :name) "gcr-clj-web")))
+                                    first
+                                    :metadata
+                                    :name)}
+
+         print-first-pod-name {:depends [first-pod-name] :task (println first-pod-name)} 
+
+         pod-intrusion {:depends [first-pod-name]
+                        :task (shell (format "kubectl exec -it %s -n production -- /bin/bash" first-pod-name))}}}
+
