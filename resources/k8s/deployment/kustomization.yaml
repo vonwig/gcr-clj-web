@@ -3,6 +3,7 @@ resources:
 - deployment.yaml
 - service.yaml
 - namespace.yaml
+- ingress.yaml
 commonLabels:
   app.kubernetes.io/name: gcr-clj-web
 images:
