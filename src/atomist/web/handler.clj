@@ -11,7 +11,7 @@
 (defroutes app
   (GET "/health" _ (constantly {:status 200 :body "ok"}))
   (->
-   (GET "/" _ (constantly {:status 200 :body {:hey "gcr-clj-web" :version 30}}))
+   (GET "/" _ (constantly {:status 200 :body {:hey "gcr-clj-web" :version 33}}))
    (wrap-json-body {:keywords? true :bigdecimals? true})  
    (wrap-json-response))
   (route/not-found "<h1>not found</h1>"))
