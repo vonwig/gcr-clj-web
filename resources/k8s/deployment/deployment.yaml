@@ -74,5 +74,5 @@ spec:
               cpu: 300m
               memory: 512Mi
           securityContext:
-            runAsNonRoot: true
+            runAsNonRoot: false
             readOnlyRootFilesystem: true
