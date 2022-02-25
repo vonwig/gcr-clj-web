@@ -1,7 +1,7 @@
 {:main atomist.web.handler
+ :base-image {:image-name "openjdk:11-slim-buster"
+              :type :registry}
  :target-image {:type :registry
                 :image-name "gcr.io/personalsdm-216019/gcr-clj-web"
-                :image-format :oci
-                :tagger {:fn jibbit.tagger/tag
-                         :args {:local "version.txt"} }
+                :tagger {:fn jibbit.tagger/tag}
                 :authorizer {:fn jibbit.gcloud/authorizer}}}

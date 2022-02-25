@@ -1,0 +1,78 @@
+# Copyright © 2021 Atomist, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: gcr-clj-web
+    app.kubernetes.io/part-of: gcr-clj-web
+  name: gcr-clj-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gcr-clj-web
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gcr-clj-web
+        app.kubernetes.io/part-of: gcr-clj-web
+    spec:
+      containers:
+        - image: gcr.io/personalsdm-216019/gcr-clj-web
+          name: controller
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always
+          livenessProbe:
+            httpGet:
+              port: 3000
+              path: /health
+              scheme: HTTP
+            failureThreshold: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 15
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              port: 3000
+              path: /health
+              scheme: HTTP
+            failureThreshold: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 15
+            periodSeconds: 30
+          startupProbe:
+            httpGet:
+              port: 3000
+              path: /health
+              scheme: HTTP
+            failureThreshold: 60
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: 300m
+              memory: 512Mi
+            requests:
+              cpu: 300m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
