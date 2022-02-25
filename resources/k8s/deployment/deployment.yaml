@@ -72,7 +72,7 @@ spec:
               memory: 512Mi
             requests:
               cpu: 300m
-              me,ory: 512Mi
+              memory: 512Mi
           securityContext:
             runAsNonRoot: false
             readOnlyRootFilesystem: true
