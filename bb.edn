@@ -75,5 +75,9 @@
          print-first-pod-name {:depends [first-pod-name] :task (println first-pod-name)} 
 
          pod-intrusion {:depends [first-pod-name]
-                        :task (shell (format "kubectl exec -it %s -n production -- /bin/bash" first-pod-name))}}}
+                        :task (shell (format "kubectl exec -it %s -n production -- /bin/bash" first-pod-name))}
+         
+         port-forward {:depends [first-pod-name]
+                       :task (shell (format "kubectl port-forward -n production %s 3000:3000" first-pod-name))}
+         }}
 

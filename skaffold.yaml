@@ -1,0 +1,28 @@
+apiVersion: skaffold/v2beta27
+kind: Config
+metadata:
+  name: gcr-clj-web
+
+build:
+  artifacts:
+  - image: gcr.io/personalsdm-216019/gcr-clj-web
+    custom:
+      buildCommand: clj -T:jib build
+      dependencies:
+        paths:
+        - src/**/*.clj
+    sync:
+      manual:
+      - src: src/**/*.clj
+        dest: /
+
+deploy:
+  kubectl:
+    manifests:
+    - resources/k8s/deployment/deployment.yaml
+    - resources/k8s/deployment/service.yaml
+
+portForward:
+- resourceType: service
+  resourceName: gcr-clj-web
+  port: 8080

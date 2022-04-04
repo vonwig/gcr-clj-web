@@ -41,31 +41,6 @@ spec:
           ports:
             - containerPort: 3000
           imagePullPolicy: Always
-          livenessProbe:
-            httpGet:
-              port: 3000
-              path: /health
-              scheme: HTTP
-            failureThreshold: 1
-            initialDelaySeconds: 60
-            timeoutSeconds: 15
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              port: 3000
-              path: /health
-              scheme: HTTP
-            failureThreshold: 1
-            initialDelaySeconds: 60
-            timeoutSeconds: 15
-            periodSeconds: 30
-          startupProbe:
-            httpGet:
-              port: 3000
-              path: /health
-              scheme: HTTP
-            failureThreshold: 60
-            periodSeconds: 10
           resources:
             limits:
               cpu: 300m
@@ -74,5 +49,5 @@ spec:
               cpu: 300m
               memory: 512Mi
           securityContext:
-            runAsNonRoot: false
-            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            readOnlyRootFilesystem: false

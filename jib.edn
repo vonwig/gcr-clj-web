@@ -3,6 +3,5 @@
               :type :registry}
  :target-image {:type :registry
                 :image-name "gcr.io/personalsdm-216019/gcr-clj-web"
-                :user "nobody"
-                :tagger {:fn jibbit.tagger/tag}
+                :tagger {:fn jibbit.tagger/environment :args {:varname "IMAGE"}}
                 :authorizer {:fn jibbit.gcloud/authorizer}}}
